@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-web-deployment-autoscaling
+  labels:
+    app: my-k8s-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      project: web-application-autoscaling
+  template:
+    metadata:
+      labels:
+        project: web-application-autoscaling
+    spec:
+      containers:
+        - name: webapp
+          image: elvolver/k8s php:latest
+          ports:
+          - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-pod-service
+  labels:
+    env: prod
+    owner: DmitryVolkov
+spec:
+  selector:
+    project: web-application-autoscaling
+  ports:
+    - name: app-listener
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
+
+  ---
+  apiVersion: autoscaling/v2beta2
+  kind: HorizontalPodAutoscaler
+  metadata:
+    name: my-web-deployment-autoscaling
+  spec:
+    scaleTargetRef:
+      apiVersion: apps/v2beta1v1
+      kind: my-web-deployment-autoscalingname: my-web-deployment-autoscaling
+    minReplicas: 2
+    maxReplicas: 6
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          targetAverageUtilization: 70
+      - type: Resource
+        resource:
+          type: memory
+          targetAverageUtilization: 80
